@@ -19,7 +19,7 @@ WORKDIR /app
 # ASP.NET Core in containers should listen on 0.0.0.0
 ENV ASPNETCORE_URLS=http://0.0.0.0:8085
 ENV DOTNET_RUNNING_IN_CONTAINER=true
-ENV ConnectionStrings__Sqlite=Data Source=/data/app.db
+ENV ConnectionStrings__Sqlite="Data Source=/data/app.db"
 
 
 COPY --from=build /app/publish ./
