@@ -11,7 +11,7 @@ public sealed class TorrentRssToBitmagnetWorker(
     IServiceScopeFactory scopeFactory)
     : BackgroundService
 {
-    private readonly Uri _defaultBitmagnetImport = new("http://192.168.50.10:3333/import");
+    private readonly Uri _defaultBitmagnetImport = new("http://localhost:3333/import");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
