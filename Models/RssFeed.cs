@@ -21,4 +21,8 @@ public sealed class RssFeed
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+    
+    public long? LastRunId { get; set; }
+    public RssFeedRun? LastRun { get; set; }
+
 }

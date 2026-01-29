@@ -9,6 +9,8 @@ public sealed class AppDbContext : DbContext
 
     public DbSet<RssFeed> RssFeeds => Set<RssFeed>();
     public DbSet<RssSeenItem> RssSeenItems => Set<RssSeenItem>();
+    public DbSet<RssFeedRun> RssFeedRuns => Set<RssFeedRun>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -19,6 +21,10 @@ public sealed class AppDbContext : DbContext
             b.Property(x => x.Url).IsRequired();
             b.Property(x => x.SourceName).IsRequired();
             b.HasIndex(x => x.Url).IsUnique(false);
+            b.HasOne(x => x.LastRun)
+                .WithMany()
+                .HasForeignKey(x => x.LastRunId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<RssSeenItem>(b =>
@@ -28,6 +34,19 @@ public sealed class AppDbContext : DbContext
 
             b.HasIndex(x => new { x.FeedId, x.ItemKey }).IsUnique(); // dedupe guarantee
             b.HasOne(x => x.Feed).WithMany().HasForeignKey(x => x.FeedId);
+        });
+        modelBuilder.Entity<RssFeedRun>(b =>
+        {
+            b.HasKey(x => x.Id);
+
+            b.HasIndex(x => new { x.FeedId, x.StartedAt });
+
+            b.Property(x => x.Error).HasMaxLength(2048);
+
+            b.HasOne(x => x.Feed)
+                .WithMany() // keep it simple: we don't need navigation collection
+                .HasForeignKey(x => x.FeedId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
