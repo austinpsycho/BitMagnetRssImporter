@@ -119,7 +119,20 @@ public sealed class HtmlTrackerToBitmagnetWorker(
                     run.ItemsScanned++;
                     run.HeartbeatAt = DateTimeOffset.UtcNow;
 
-                    var infoHash = await scraper.TryReadInfoHashFromDetailPageAsync(http, tracker, r.DetailUrl, ct);
+                    var link = r.BestLink.ToString();
+
+                    string? infoHash =
+                        link.StartsWith("magnet:?", StringComparison.OrdinalIgnoreCase)
+                            ? MagnetInfoHashParser.TryGetInfoHashFromMagnet(link)
+                            : null;
+
+                    if (infoHash is null && link.StartsWith("http", StringComparison.OrdinalIgnoreCase) && link.EndsWith(".torrent", StringComparison.OrdinalIgnoreCase))
+                        infoHash = await UrlInfoHashParser.TryComputeInfoHashFromTorrentUrlAsync(http, link, ct);
+
+                    // If it wasn't magnet/torrent, treat it as a detail page and regex the hash
+                    if (infoHash is null && link.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                        infoHash = await scraper.TryReadInfoHashFromDetailPageAsync(http, tracker, new Uri(link), ct);
+
                     if (infoHash is null)
                     {
                         run.SkippedNoInfoHash++;

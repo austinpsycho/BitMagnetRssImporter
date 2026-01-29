@@ -9,7 +9,7 @@ public sealed class HtmlTrackerScraper
 {
     private readonly IBrowsingContext _ctx = BrowsingContext.New(Configuration.Default);
 
-    public sealed record ListRow(string Title, Uri DetailUrl);
+    public sealed record ListRow(string Title, Uri BestLink);
 
     public async Task<(List<ListRow> Rows, Uri? NextPage)> ReadListPageAsync(HttpClient http, HtmlTracker tracker, Uri pageUrl, CancellationToken ct)
     {
@@ -21,6 +21,15 @@ public sealed class HtmlTrackerScraper
 
         foreach (var row in doc.QuerySelectorAll(tracker.RowSelector))
         {
+            // Prefer magnet link if present on list row
+            var magnetEl = row.QuerySelector("a[href^='magnet:?']") as IHtmlAnchorElement;
+            if (magnetEl?.Href is not null)
+            {
+                rows.Add(new ListRow(magnetEl.Text, new Uri(magnetEl.Href)));
+                continue;
+            }
+
+            // Otherwise fallback to your configured detail link selector
             var linkEl = row.QuerySelector(tracker.DetailLinkSelector) as IHtmlAnchorElement;
             if (linkEl?.Href is null) continue;
 
