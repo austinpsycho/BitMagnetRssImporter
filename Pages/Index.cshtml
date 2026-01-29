@@ -1,0 +1,108 @@
+﻿@page
+@model BitMagnetRssImporter.Pages.IndexModel
+
+@{
+    ViewData["Title"] = "RSS Feeds";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="m-0">RSS Feeds</h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-primary" asp-page="/Feeds/Create">Add feed</a>
+        <button class="btn btn-outline-secondary" type="button" id="refreshBtn">Refresh</button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Enabled</th>
+                    <th>Interval</th>
+                    <th>Last Checked (UTC)</th>
+                    <th>Next Due (UTC)</th>
+                    <th>Source</th>
+                    <th>ETag</th>
+                    <th>Last-Modified</th>
+                    <th>Import URL</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var f in Model.Feeds)
+                {
+                    <tr>
+                        <td style="min-width: 320px;">
+                            <div class="fw-semibold">@f.Name</div>
+                            <div class="small text-secondary text-break">
+                                <a href="@f.Url" target="_blank" rel="noreferrer">@f.Url</a>
+                            </div>
+                        </td>
+                        <td>
+                            @if (f.Enabled)
+                            {
+                                <span class="badge text-bg-success">Enabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">Disabled</span>
+                            }
+                        </td>
+                        <td>@f.PollIntervalMinutes min</td>
+                        <td class="text-nowrap">@(f.LastCheckedAt?.ToString("u") ?? "-")</td>
+                        <td class="text-nowrap">@(f.NextDueAt?.ToString("u") ?? "-")</td>
+                        <td class="text-break">@f.SourceName</td>
+                        <td class="text-break" style="max-width: 220px;">@(f.LastEtag ?? "-")</td>
+                        <td class="text-nowrap">@(f.LastModified?.ToString("u") ?? "-")</td>
+                        <td class="text-break" style="max-width: 260px;">@(f.BitmagnetImportUrl ?? "(default)")</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-info" asp-page="/Feeds/Edit" asp-route-id="@f.Id">Edit</a>
+                            <a class="btn btn-sm btn-outline-danger" asp-page="/Feeds/Delete" asp-route-id="@f.Id">Delete</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2 small text-secondary">
+            <div>Last updated: <span id="lastUpdated"></span></div>
+            <div>Auto-refresh: <span id="refreshCountdown"></span>s</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+  const refreshSeconds = 30;   // <-- tweak
+  let remaining = refreshSeconds;
+
+  const lastUpdatedEl = document.getElementById("lastUpdated");
+  const countdownEl = document.getElementById("refreshCountdown");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  function setNow() {
+    lastUpdatedEl.textContent = new Date().toLocaleString();
+  }
+
+  function tick() {
+    remaining--;
+    if (remaining <= 0) {
+      window.location.reload();
+      return;
+    }
+    countdownEl.textContent = remaining;
+  }
+
+  refreshBtn.addEventListener("click", () => window.location.reload());
+
+  setNow();
+  countdownEl.textContent = remaining;
+  setInterval(tick, 1000);
+})();
+</script>
+}

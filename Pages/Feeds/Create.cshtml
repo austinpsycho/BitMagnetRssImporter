@@ -1,0 +1,51 @@
+﻿@page
+@model BitMagnetRssImporter.Pages.Feeds.CreateModel
+
+@{
+    ViewData["Title"] = "Add RSS Feed";
+}
+
+<h1>Add RSS Feed</h1>
+
+<form method="post">
+    <div class="mb-3">
+        <label asp-for="Feed.Name" class="form-label"></label>
+        <input asp-for="Feed.Name" class="form-control" />
+        <span asp-validation-for="Feed.Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.Url" class="form-label"></label>
+        <input asp-for="Feed.Url" class="form-control" />
+        <span asp-validation-for="Feed.Url" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.SourceName" class="form-label"></label>
+        <input asp-for="Feed.SourceName" class="form-control" />
+        <div class="form-text">This becomes <code>source</code> in the bitmagnet import payload.</div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.PollIntervalMinutes" class="form-label"></label>
+        <input asp-for="Feed.PollIntervalMinutes" class="form-control" type="number" min="1" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.BitmagnetImportUrl" class="form-label"></label>
+        <input asp-for="Feed.BitmagnetImportUrl" class="form-control" />
+        <div class="form-text">Leave blank to use the default <code>http://localhost:3333/import</code>.</div>
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="Feed.Enabled" class="form-check-input" />
+        <label asp-for="Feed.Enabled" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="/Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

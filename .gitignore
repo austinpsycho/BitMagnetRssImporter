@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.idea/
+**/.vscode/
+*.user
+*.suo
+*.db
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db-shm
+*.db-wal
+

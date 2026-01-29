@@ -1,0 +1,49 @@
+﻿@page
+@model BitMagnetRssImporter.Pages.Feeds.EditModel
+
+@{
+    ViewData["Title"] = "Edit RSS Feed";
+}
+
+<h1>Edit RSS Feed</h1>
+
+<form method="post">
+    <input type="hidden" asp-for="Feed.Id" />
+
+    <div class="mb-3">
+        <label asp-for="Feed.Name" class="form-label"></label>
+        <input asp-for="Feed.Name" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.Url" class="form-label"></label>
+        <input asp-for="Feed.Url" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.SourceName" class="form-label"></label>
+        <input asp-for="Feed.SourceName" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.PollIntervalMinutes" class="form-label"></label>
+        <input asp-for="Feed.PollIntervalMinutes" class="form-control" type="number" min="1" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Feed.BitmagnetImportUrl" class="form-label"></label>
+        <input asp-for="Feed.BitmagnetImportUrl" class="form-control" />
+    </div>
+
+    <div class="form-check mb-3">
+        <input asp-for="Feed.Enabled" class="form-check-input" />
+        <label asp-for="Feed.Enabled" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a asp-page="/Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

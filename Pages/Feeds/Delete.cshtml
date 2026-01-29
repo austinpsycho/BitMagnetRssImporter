@@ -1,0 +1,22 @@
+﻿@page
+@model BitMagnetRssImporter.Pages.Feeds.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete RSS Feed";
+}
+
+<h1>Delete RSS Feed</h1>
+
+<p>Are you sure you want to delete this feed?</p>
+
+<ul>
+    <li><strong>Name:</strong> @Model.Feed.Name</li>
+    <li><strong>URL:</strong> @Model.Feed.Url</li>
+    <li><strong>Source:</strong> @Model.Feed.SourceName</li>
+</ul>
+
+<form method="post">
+    <input type="hidden" name="id" value="@Model.Feed.Id" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-page="/Index" class="btn btn-secondary">Cancel</a>
+</form>

@@ -1,0 +1,188 @@
+﻿using BitMagnetRssImporter.Data;
+using BitMagnetRssImporter.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Net;
+
+namespace BitMagnetRssImporter.Services;
+
+public sealed class TorrentRssToBitmagnetWorker(
+    IHttpClientFactory httpClientFactory,
+    ILogger<TorrentRssToBitmagnetWorker> log,
+    IServiceScopeFactory scopeFactory)
+    : BackgroundService
+{
+    private readonly Uri _defaultBitmagnetImport = new("http://192.168.50.10:3333/import");
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var http = httpClientFactory.CreateClient(nameof(TorrentRssToBitmagnetWorker));
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var now = DateTimeOffset.UtcNow;
+
+                var feeds = await db.RssFeeds
+                    .Where(f => f.Enabled)
+                    .ToListAsync(stoppingToken);
+
+                foreach (var feed in feeds)
+                {
+                    if (!IsDue(feed, now)) continue;
+
+                    await PollOneFeedAsync(db, http, feed, stoppingToken);
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Worker loop failed");
+                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+            }
+        }
+    }
+
+    private static bool IsDue(RssFeed feed, DateTimeOffset now)
+    {
+        if (feed.LastCheckedAt is null) return true;
+        var next = feed.LastCheckedAt.Value.AddMinutes(Math.Max(1, feed.PollIntervalMinutes));
+        return now >= next;
+    }
+
+    private async Task PollOneFeedAsync(AppDbContext db, HttpClient http, RssFeed feed, CancellationToken ct)
+    {
+        var now = DateTimeOffset.UtcNow;
+        feed.LastCheckedAt = now;
+        feed.UpdatedAt = now;
+
+        var request = new HttpRequestMessage(HttpMethod.Get, feed.Url);
+        if (!string.IsNullOrWhiteSpace(feed.LastEtag))
+            request.Headers.TryAddWithoutValidation("If-None-Match", feed.LastEtag);
+
+        if (feed.LastModified.HasValue)
+            request.Headers.IfModifiedSince = feed.LastModified.Value.UtcDateTime;
+
+        HttpResponseMessage resp;
+        try
+        {
+            resp = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+        }
+        catch (Exception ex)
+        {
+            log.LogWarning(ex, "Feed fetch failed: {FeedName}", feed.Name);
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        if (resp.StatusCode == HttpStatusCode.NotModified)
+        {
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        resp.EnsureSuccessStatusCode();
+
+        if (resp.Headers.ETag != null)
+            feed.LastEtag = resp.Headers.ETag.Tag;
+
+        if (resp.Content.Headers.LastModified.HasValue)
+            feed.LastModified = resp.Content.Headers.LastModified.Value;
+
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        var feedItems = await FeedParser.ReadFeedAsync(stream, ct);
+
+        // Step 1: parse feed → candidate items (keyed by infoHash)
+        var candidates = new Dictionary<string, BitmagnetImportItem>();
+
+        foreach (var i in feedItems)
+        {
+            var itemUrl = FeedParser.GetBestTorrentOrMagnetUrl(i);
+            if (string.IsNullOrWhiteSpace(itemUrl)) continue;
+
+            string? infoHash = MagnetInfoHashParser.TryGetInfoHashFromMagnet(itemUrl);
+
+            if (infoHash is null && itemUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                infoHash = await UrlInfoHashParser.TryComputeInfoHashFromTorrentUrlAsync(http, itemUrl, ct);
+
+            if (infoHash is null)
+            {
+                log.LogDebug("Skipping (no infohash): {Feed} {Title}", feed.Name, i.Title?.Text);
+                continue;
+            }
+
+            // infoHash is our dedupe key
+            if (!candidates.ContainsKey(infoHash))
+            {
+                candidates[infoHash] = new BitmagnetImportItem(
+                    infoHash: infoHash,
+                    name: i.Title?.Text ?? infoHash,
+                    size: null,
+                    source: feed.SourceName,
+                    publishedAt: i.PublishDate != DateTimeOffset.MinValue ? i.PublishDate : null
+                );
+            }
+        }
+
+        if (candidates.Count == 0)
+        {
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        // Step 2: dedupe against DB (single query)
+        var keys = candidates.Keys.ToArray();
+
+        var seenKeys = await db.RssSeenItems
+            .Where(x => x.FeedId == feed.Id && keys.Contains(x.ItemKey))
+            .Select(x => x.ItemKey)
+            .ToListAsync(ct);
+
+        var seenSet = seenKeys.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var newItems = candidates
+            .Where(kvp => !seenSet.Contains(kvp.Key))
+            .Select(kvp => kvp.Value)
+            .ToList();
+
+        if (newItems.Count == 0)
+        {
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        // Step 3: POST once per feed
+        var importUrl = !string.IsNullOrWhiteSpace(feed.BitmagnetImportUrl)
+            ? new Uri(feed.BitmagnetImportUrl)
+            : _defaultBitmagnetImport;
+
+        await BitmagnetImporter.PostToBitmagnetImportAsync(http, importUrl, newItems, ct);
+
+        // Step 4: mark seen AFTER successful POST
+        foreach (var item in newItems)
+        {
+            db.RssSeenItems.Add(new RssSeenItem
+            {
+                FeedId = feed.Id,
+                ItemKey = item.infoHash,
+                InfoHash = item.infoHash,
+                Title = item.name
+            });
+        }
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException)
+        {
+            // Ignore duplicates; dedupe is best-effort and idempotent
+        }
+
+        log.LogInformation("Imported {Count} items from {FeedName}", newItems.Count, feed.Name);
+    }
+}

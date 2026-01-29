@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#7c3aed"></stop>
+      <stop offset="1" stop-color="#22c55e"></stop>
+    </linearGradient>
+  </defs>
+
+  <!-- magnet -->
+  <path fill="url(#g)" d="M36 18h20v44c0 14.4 11.6 26 26 26s26-11.6 26-26V18h20v44c0 25.4-20.6 46-46 46S36 87.4 36 62V18z"></path>
+  <rect x="36" y="18" width="20" height="14" fill="#e5e7eb"></rect>
+  <rect x="108" y="18" width="20" height="14" fill="#e5e7eb"></rect>
+
+  <!-- rss arcs -->
+  <circle cx="28" cy="98" r="8" fill="#f59e0b"></circle>
+  <path d="M18 76c18 0 34 16 34 34" fill="none" stroke="#f59e0b" stroke-width="10" stroke-linecap="round"></path>
+  <path d="M18 54c30 0 56 26 56 56" fill="none" stroke="#f59e0b" stroke-width="10" stroke-linecap="round" opacity=".85"></path>
+</svg>
