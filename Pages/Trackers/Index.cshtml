@@ -1,0 +1,162 @@
+﻿@page
+@model BitMagnetRssImporter.Pages.Trackers.IndexModel
+
+@{
+    ViewData["Title"] = "HTML Trackers";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="m-0">HTML Trackers</h1>
+    <div class="d-flex gap-2">
+        <a class="btn btn-primary" asp-page="/Trackers/Create">Add tracker</a>
+        <a class="btn btn-outline-secondary" asp-page="/Index">Back to RSS</a>
+        <button class="btn btn-outline-secondary" type="button" id="refreshBtn">Refresh</button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Enabled</th>
+                    <th>Interval</th>
+                    <th>Pages</th>
+                    <th>Seen Streak</th>
+                    <th>Last Checked (UTC)</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var t in Model.Trackers)
+                {
+                    <tr>
+                        <td style="min-width: 320px;">
+                            <div class="fw-semibold">@t.Name</div>
+                            <div class="small text-secondary text-break">
+                                <a href="@t.StartUrl" target="_blank" rel="noreferrer">@t.StartUrl</a>
+                            </div>
+                            <div class="small text-secondary">SourceName: @t.SourceName</div>
+                        </td>
+
+                        <td>
+                            @if (t.Enabled)
+                            {
+                                <span class="badge text-bg-success">Enabled</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">Disabled</span>
+                            }
+                        </td>
+
+                        <td class="text-nowrap">@t.PollIntervalMinutes min</td>
+
+                        <td class="text-nowrap">@t.MaxPagesPerRun</td>
+
+                        <td class="text-nowrap">@t.StopAfterSeenStreak</td>
+
+                        <td class="text-nowrap">@(t.LastCheckedAt?.ToString("u") ?? "-")</td>
+
+                        <td style="min-width: 320px;">
+                            @if (t.LastRun is null)
+                            {
+                                <span class="text-secondary">—</span>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(t.LastRun.Error))
+                            {
+                                <span class="badge text-bg-danger">Error</span>
+                                <div class="small text-secondary text-break">@t.LastRun.Error</div>
+                                <div class="small text-secondary">
+                                    @if (t.LastRun.HttpStatus is not null)
+                                    {
+                                        <span>HTTP @t.LastRun.HttpStatus</span>
+                                        <span> • </span>
+                                    }
+                                    <span>@(t.LastRun.DurationMs ?? 0) ms</span>
+                                </div>
+                            }
+                            else if (t.LastRun.IsActive)
+                            {
+                                <span class="badge text-bg-warning">Running</span>
+                                <div class="small text-secondary">
+                                    Phase: @t.LastRun.Phase
+                                    • Page @t.LastRun.PagesVisited
+                                    • Scanned @t.LastRun.ItemsScanned
+                                    • Seen streak @t.LastRun.SeenStreak
+                                </div>
+                                <div class="small text-secondary">
+                                    New @t.LastRun.NewItems • Imported @t.LastRun.Imported
+                                    • Heartbeat @t.LastRun.HeartbeatAt.ToString("u")
+                                </div>
+                            }
+                            else if (t.LastRun.HttpStatus == 304)
+                            {
+                                <span class="badge text-bg-secondary">304</span>
+                                <div class="small text-secondary">
+                                    Not modified • @(t.LastRun.DurationMs ?? 0) ms
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-success">OK</span>
+                                <div class="small text-secondary">
+                                    Parsed @t.LastRun.ItemsParsed
+                                    • New @t.LastRun.NewItems
+                                    • Imported @t.LastRun.Imported
+                                    • @(t.LastRun.DurationMs ?? 0) ms
+                                </div>
+                            }
+                        </td>
+
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-info" asp-page="/Trackers/Edit" asp-route-id="@t.Id">Edit</a>
+                            <a class="btn btn-sm btn-outline-danger" asp-page="/Trackers/Delete" asp-route-id="@t.Id">Delete</a>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-between mt-2 small text-secondary">
+            <div>Last updated: <span id="lastUpdated"></span></div>
+            <div>Auto-refresh: <span id="refreshCountdown"></span>s</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+  const refreshSeconds = 10;   // trackers benefit from faster refresh when "Running"
+  let remaining = refreshSeconds;
+
+  const lastUpdatedEl = document.getElementById("lastUpdated");
+  const countdownEl = document.getElementById("refreshCountdown");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  function setNow() {
+    lastUpdatedEl.textContent = new Date().toLocaleString();
+  }
+
+  function tick() {
+    remaining--;
+    if (remaining <= 0) {
+      window.location.reload();
+      return;
+    }
+    countdownEl.textContent = remaining;
+  }
+
+  refreshBtn.addEventListener("click", () => window.location.reload());
+
+  setNow();
+  countdownEl.textContent = remaining;
+  setInterval(tick, 1000);
+})();
+</script>
+}

@@ -7,7 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddHttpClient();
+builder.Services.AddSingleton<HtmlTrackerScraper>();
 builder.Services.AddHostedService<TorrentRssToBitmagnetWorker>();
+builder.Services.AddHostedService<HtmlTrackerToBitmagnetWorker>();
 builder.Services.AddDbContext<AppDbContext>(opt =>
 {
     opt.UseSqlite(builder.Configuration.GetConnectionString("Sqlite") ?? "Data Source=app.db");

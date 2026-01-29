@@ -29,13 +29,19 @@ public sealed class TorrentRssToBitmagnetWorker(
 
                 var now = DateTimeOffset.UtcNow;
 
-                var feeds = await db.RssFeeds
-                    .Where(f => f.Enabled)
-                    .ToListAsync(stoppingToken);
+                var feeds = await db.RssFeeds.Where(f => f.Enabled).ToListAsync(stoppingToken);
 
                 foreach (var feed in feeds)
                 {
                     if (!IsDue(feed, now)) continue;
+
+                    // skip if an active run exists for this source
+                    var active = await db.IngestionRuns.AnyAsync(
+                        r => r.SourceType == IngestionSourceType.RssFeed && r.SourceId == feed.Id && r.IsActive,
+                        stoppingToken);
+
+                    if (active) continue;
+
                     await PollOneFeedAsync(db, http, feed, stoppingToken);
                 }
 
@@ -61,19 +67,23 @@ public sealed class TorrentRssToBitmagnetWorker(
         var sw = Stopwatch.StartNew();
         var startedAt = DateTimeOffset.UtcNow;
 
-        var run = new RssFeedRun
+        var run = new IngestionRun
         {
-            FeedId = feed.Id,
+            SourceType = IngestionSourceType.RssFeed,
+            SourceId = feed.Id,
+            IsActive = true,
+            Phase = "fetching",
             StartedAt = startedAt,
+            HeartbeatAt = startedAt,
             CreatedAt = startedAt
         };
-        db.RssFeedRuns.Add(run);
+
+        db.IngestionRuns.Add(run);
 
         try
         {
-            var now = DateTimeOffset.UtcNow;
-            feed.LastCheckedAt = now;
-            feed.UpdatedAt = now;
+            feed.LastCheckedAt = DateTimeOffset.UtcNow;
+            feed.UpdatedAt = DateTimeOffset.UtcNow;
 
             var request = new HttpRequestMessage(HttpMethod.Get, feed.Url);
             if (!string.IsNullOrWhiteSpace(feed.LastEtag))
@@ -90,17 +100,14 @@ public sealed class TorrentRssToBitmagnetWorker(
             catch (Exception ex)
             {
                 run.Error = $"Fetch failed: {ex.Message}";
-                log.LogWarning(ex, "Feed fetch failed: {FeedName}", feed.Name);
                 return;
             }
 
             run.HttpStatus = (int)resp.StatusCode;
+            run.HeartbeatAt = DateTimeOffset.UtcNow;
 
             if (resp.StatusCode == HttpStatusCode.NotModified)
-            {
-                // record a run even when nothing changed
                 return;
-            }
 
             resp.EnsureSuccessStatusCode();
 
@@ -110,12 +117,15 @@ public sealed class TorrentRssToBitmagnetWorker(
             if (resp.Content.Headers.LastModified.HasValue)
                 feed.LastModified = resp.Content.Headers.LastModified.Value;
 
+            run.Phase = "parsing";
+            run.HeartbeatAt = DateTimeOffset.UtcNow;
+
             await using var stream = await resp.Content.ReadAsStreamAsync(ct);
             var feedItems = await FeedParser.ReadFeedAsync(stream, ct);
 
             run.ItemsParsed = feedItems.Count;
 
-            // Step 1: parse feed → candidate items (keyed by infoHash)
+            // candidate items keyed by infoHash
             var candidates = new Dictionary<string, BitmagnetImportItem>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var i in feedItems)
@@ -131,7 +141,6 @@ public sealed class TorrentRssToBitmagnetWorker(
                 if (infoHash is null)
                 {
                     run.SkippedNoInfoHash++;
-                    log.LogDebug("Skipping (no infohash): {Feed} {Title}", feed.Name, i.Title?.Text);
                     continue;
                 }
 
@@ -149,10 +158,11 @@ public sealed class TorrentRssToBitmagnetWorker(
 
             run.Candidates = candidates.Count;
 
-            if (candidates.Count == 0)
-                return;
+            if (candidates.Count == 0) return;
 
-            // Step 2: dedupe against DB (single query)
+            run.Phase = "deduping";
+            run.HeartbeatAt = DateTimeOffset.UtcNow;
+
             var keys = candidates.Keys.ToArray();
 
             var seenKeys = await db.RssSeenItems
@@ -170,15 +180,17 @@ public sealed class TorrentRssToBitmagnetWorker(
 
             run.NewItems = newItems.Count;
 
-            if (newItems.Count == 0)
-                return;
+            if (newItems.Count == 0) return;
 
-            // Step 3: POST once per feed
+            run.Phase = "importing";
+            run.HeartbeatAt = DateTimeOffset.UtcNow;
+
             await BitmagnetImporter.PostToBitmagnetImportAsync(http, _defaultBitmagnetImport, newItems, ct);
-
             run.Imported = newItems.Count;
 
-            // Step 4: mark seen AFTER successful POST
+            run.Phase = "saving";
+            run.HeartbeatAt = DateTimeOffset.UtcNow;
+
             foreach (var item in newItems)
             {
                 db.RssSeenItems.Add(new RssSeenItem
@@ -195,19 +207,21 @@ public sealed class TorrentRssToBitmagnetWorker(
         catch (Exception ex)
         {
             run.Error = ex.Message;
-            log.LogWarning(ex, "Poll failed for feed {FeedName}", feed.Name);
+            log.LogWarning(ex, "RSS poll failed for {FeedName}", feed.Name);
         }
         finally
         {
             sw.Stop();
+
+            run.IsActive = false;
+            run.Phase = "done";
             run.FinishedAt = DateTimeOffset.UtcNow;
             run.DurationMs = (int)sw.ElapsedMilliseconds;
+            run.HeartbeatAt = DateTimeOffset.UtcNow;
 
             try
             {
                 await db.SaveChangesAsync(ct);
-
-                // update pointer to last run
                 feed.LastRunId = run.Id;
                 await db.SaveChangesAsync(ct);
             }

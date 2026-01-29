@@ -1,0 +1,104 @@
+﻿@page
+@model BitMagnetRssImporter.Pages.Trackers.CreateModel
+
+@{
+    ViewData["Title"] = "Add HTML Tracker";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="m-0">Add HTML Tracker</h1>
+    <a class="btn btn-outline-secondary" asp-page="/Trackers/Index">Back</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post" class="row g-3">
+
+            <div class="col-md-6">
+                <label class="form-label">Name</label>
+                <input class="form-control" asp-for="Tracker.Name" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">SourceName (Bitmagnet)</label>
+                <input class="form-control" asp-for="Tracker.SourceName" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Start URL</label>
+                <input class="form-control" asp-for="Tracker.StartUrl" />
+                <div class="form-text">Example: https://tpb.party/browse/100</div>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Enabled</label>
+                <select class="form-select" asp-for="Tracker.Enabled">
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Poll Interval (minutes)</label>
+                <input class="form-control" asp-for="Tracker.PollIntervalMinutes" type="number" min="1" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Max Pages / Run</label>
+                <input class="form-control" asp-for="Tracker.MaxPagesPerRun" type="number" min="1" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Stop After Seen Streak</label>
+                <input class="form-control" asp-for="Tracker.StopAfterSeenStreak" type="number" min="1" />
+            </div>
+
+            <hr class="my-3" />
+
+            <div class="col-md-6">
+                <label class="form-label">Row Selector</label>
+                <input class="form-control" asp-for="Tracker.RowSelector" />
+                <div class="form-text">CSS selector for each result row.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Detail Link Selector</label>
+                <input class="form-control" asp-for="Tracker.DetailLinkSelector" />
+                <div class="form-text">CSS selector within the row for the detail link (href).</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Title Selector (optional)</label>
+                <input class="form-control" asp-for="Tracker.TitleSelector" />
+                <div class="form-text">If blank, uses the detail link text.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Next Page Selector (optional)</label>
+                <input class="form-control" asp-for="Tracker.NextPageSelector" />
+                <div class="form-text">CSS selector on the page to find the next-page link.</div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">InfoHash Regex</label>
+                <input class="form-control" asp-for="Tracker.InfoHashRegex" />
+                <div class="form-text">Default matches a 40-hex hash. Group 1 is used if present.</div>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Backfill Enabled</label>
+                <select class="form-select" asp-for="Tracker.BackfillEnabled">
+                    <option value="false">False</option>
+                    <option value="true">True</option>
+                </select>
+                <div class="form-text">When true, the tracker crawls forward using a saved cursor.</div>
+            </div>
+
+            <div class="col-12 d-flex gap-2 justify-content-end">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <a class="btn btn-outline-secondary" asp-page="/Trackers/Index">Cancel</a>
+            </div>
+
+        </form>
+    </div>
+</div>

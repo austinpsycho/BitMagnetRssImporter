@@ -1,0 +1,30 @@
+﻿@page "{id:long}"
+@model BitMagnetRssImporter.Pages.Trackers.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete HTML Tracker";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="m-0">Delete HTML Tracker</h1>
+    <a class="btn btn-outline-secondary" asp-page="/Trackers/Index">Back</a>
+</div>
+
+<div class="alert alert-danger">
+    <div class="fw-semibold">Are you sure?</div>
+    <div>This will delete the tracker definition. (Seen items / runs are not removed unless your FK cascade does so.)</div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="mb-3">
+            <div class="text-secondary small">Tracker</div>
+            <div class="fw-semibold">@Model.Name</div>
+        </div>
+
+        <form method="post" class="d-flex gap-2 justify-content-end">
+            <button class="btn btn-danger" type="submit">Delete</button>
+            <a class="btn btn-outline-secondary" asp-page="/Trackers/Index">Cancel</a>
+        </form>
+    </div>
+</div>

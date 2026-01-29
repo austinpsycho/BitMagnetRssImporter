@@ -3,6 +3,7 @@ using System;
 using BitMagnetRssImporter.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BitMagnetRssImporter.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260129170415_AddInjestionRunsAndHtmlTrackers")]
+    partial class AddInjestionRunsAndHtmlTrackers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -55,15 +58,6 @@ namespace BitMagnetRssImporter.Migrations
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
-
-                    b.Property<DateTimeOffset?>("BackfillCompletedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("BackfillEnabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("BackfillNextUrl")
-                        .HasColumnType("TEXT");
 
                     b.Property<string>("DetailLinkSelector")
                         .IsRequired()

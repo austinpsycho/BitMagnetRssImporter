@@ -1,0 +1,113 @@
+﻿@page "{id:long}"
+@model BitMagnetRssImporter.Pages.Trackers.EditModel
+
+@{
+    ViewData["Title"] = "Edit HTML Tracker";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h1 class="m-0">Edit HTML Tracker</h1>
+    <a class="btn btn-outline-secondary" asp-page="/Trackers/Index">Back</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <form method="post" class="row g-3">
+            <input type="hidden" asp-for="Tracker.Id" />
+
+            <div class="col-md-6">
+                <label class="form-label">Name</label>
+                <input class="form-control" asp-for="Tracker.Name" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">SourceName (Bitmagnet)</label>
+                <input class="form-control" asp-for="Tracker.SourceName" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Start URL</label>
+                <input class="form-control" asp-for="Tracker.StartUrl" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Enabled</label>
+                <select class="form-select" asp-for="Tracker.Enabled">
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Poll Interval (minutes)</label>
+                <input class="form-control" asp-for="Tracker.PollIntervalMinutes" type="number" min="1" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Max Pages / Run</label>
+                <input class="form-control" asp-for="Tracker.MaxPagesPerRun" type="number" min="1" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Stop After Seen Streak</label>
+                <input class="form-control" asp-for="Tracker.StopAfterSeenStreak" type="number" min="1" />
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Backfill Enabled</label>
+                <select class="form-select" asp-for="Tracker.BackfillEnabled">
+                    <option value="false">False</option>
+                    <option value="true">True</option>
+                </select>
+            </div>
+
+            <div class="col-md-9">
+                <label class="form-label">Backfill Cursor (Next URL)</label>
+                <input class="form-control" asp-for="Tracker.BackfillNextUrl" />
+                <div class="form-text">Leave blank to start backfill from StartUrl.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Backfill Completed At (UTC)</label>
+                <input class="form-control" value="@(Model.Tracker.BackfillCompletedAt?.ToString("u") ?? "-")" disabled />
+            </div>
+
+
+            <hr class="my-3" />
+
+            <div class="col-md-6">
+                <label class="form-label">Row Selector</label>
+                <input class="form-control" asp-for="Tracker.RowSelector" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Detail Link Selector</label>
+                <input class="form-control" asp-for="Tracker.DetailLinkSelector" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Title Selector (optional)</label>
+                <input class="form-control" asp-for="Tracker.TitleSelector" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Next Page Selector (optional)</label>
+                <input class="form-control" asp-for="Tracker.NextPageSelector" />
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">InfoHash Regex</label>
+                <input class="form-control" asp-for="Tracker.InfoHashRegex" />
+            </div>
+
+            <div class="col-12 d-flex gap-2 justify-content-end">
+                <button class="btn btn-primary" type="submit">Save</button>
+                <a class="btn btn-outline-secondary" asp-page="/Trackers/Index">Cancel</a>
+            </div>
+        </form>
+        <form method="post" asp-page-handler="ResetBackfill" class="d-flex gap-2 justify-content-end mt-2">
+            <input type="hidden" asp-for="Tracker.Id" />
+            <button class="btn btn-outline-warning" type="submit">Reset backfill</button>
+        </form>
+    </div>
+</div>
