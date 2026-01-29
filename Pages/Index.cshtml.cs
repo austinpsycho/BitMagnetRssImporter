@@ -19,8 +19,7 @@ public sealed class IndexModel(AppDbContext db) : PageModel
         DateTimeOffset? LastCheckedAt,
         DateTimeOffset? NextDueAt,
         string? LastEtag,
-        DateTimeOffset? LastModified,
-        string? BitmagnetImportUrl
+        DateTimeOffset? LastModified
     );
 
     public async Task OnGetAsync(CancellationToken ct)
@@ -45,8 +44,7 @@ public sealed class IndexModel(AppDbContext db) : PageModel
                 f.LastCheckedAt,
                 nextDue,
                 f.LastEtag,
-                f.LastModified,
-                f.BitmagnetImportUrl
+                f.LastModified
             );
         }).ToList();
     }

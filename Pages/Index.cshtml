@@ -57,7 +57,6 @@
                         <td class="text-break">@f.SourceName</td>
                         <td class="text-break" style="max-width: 220px;">@(f.LastEtag ?? "-")</td>
                         <td class="text-nowrap">@(f.LastModified?.ToString("u") ?? "-")</td>
-                        <td class="text-break" style="max-width: 260px;">@(f.BitmagnetImportUrl ?? "(default)")</td>
                         <td class="text-end text-nowrap">
                             <a class="btn btn-sm btn-outline-info" asp-page="/Feeds/Edit" asp-route-id="@f.Id">Edit</a>
                             <a class="btn btn-sm btn-outline-danger" asp-page="/Feeds/Delete" asp-route-id="@f.Id">Delete</a>

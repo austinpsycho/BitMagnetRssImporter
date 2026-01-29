@@ -20,6 +20,7 @@ WORKDIR /app
 ENV ASPNETCORE_URLS=http://0.0.0.0:8085
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 ENV ConnectionStrings__Sqlite="Data Source=/data/app.db"
+ENV ASPNETCORE_ENVIRONMENT="Production"
 
 
 COPY --from=build /app/publish ./

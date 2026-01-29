@@ -10,9 +10,6 @@ public sealed class RssFeed
     // What shows up in bitmagnet as `source`
     public required string SourceName { get; set; }
 
-    // Optional: allow different import endpoints per feed (or just set one globally)
-    public string? BitmagnetImportUrl { get; set; }
-
     public bool Enabled { get; set; } = true;
 
     public int PollIntervalMinutes { get; set; } = 5;

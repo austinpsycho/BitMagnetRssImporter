@@ -35,7 +35,6 @@ public sealed class EditModel : PageModel
         existing.Url = Feed.Url;
         existing.SourceName = Feed.SourceName;
         existing.PollIntervalMinutes = Feed.PollIntervalMinutes;
-        existing.BitmagnetImportUrl = Feed.BitmagnetImportUrl;
         existing.Enabled = Feed.Enabled;
         existing.UpdatedAt = DateTimeOffset.UtcNow;
 

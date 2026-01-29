@@ -8,10 +8,11 @@ namespace BitMagnetRssImporter.Services;
 public sealed class TorrentRssToBitmagnetWorker(
     IHttpClientFactory httpClientFactory,
     ILogger<TorrentRssToBitmagnetWorker> log,
-    IServiceScopeFactory scopeFactory)
+    IServiceScopeFactory scopeFactory,
+    IConfiguration config)
     : BackgroundService
 {
-    private readonly Uri _defaultBitmagnetImport = new("http://localhost:3333/import");
+    private readonly Uri _defaultBitmagnetImport = new Uri(config["Bitmagnet:ImportUrl"] ?? "http://localhost:3333/import");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -156,11 +157,7 @@ public sealed class TorrentRssToBitmagnetWorker(
         }
 
         // Step 3: POST once per feed
-        var importUrl = !string.IsNullOrWhiteSpace(feed.BitmagnetImportUrl)
-            ? new Uri(feed.BitmagnetImportUrl)
-            : _defaultBitmagnetImport;
-
-        await BitmagnetImporter.PostToBitmagnetImportAsync(http, importUrl, newItems, ct);
+        await BitmagnetImporter.PostToBitmagnetImportAsync(http, _defaultBitmagnetImport, newItems, ct);
 
         // Step 4: mark seen AFTER successful POST
         foreach (var item in newItems)
